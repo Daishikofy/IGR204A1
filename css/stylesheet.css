@@ -1,0 +1,16 @@
+.baseline {
+    display: flex;
+    justify-content: space-between;
+}
+
+.title {
+    color: #DDDDDD;
+    margin-bottom: 10px;
+    align-content: center;
+}
+
+.bottomGroup {
+    display: flex;
+    flex-flow: row;
+    padding-top: 10px;
+}

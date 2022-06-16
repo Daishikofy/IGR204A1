@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Names Popularity</title>
+    <script src="js/d3/d3.js"></script>
+    <link rel="stylesheet" href="/css/stylesheet.css">
+</head>
+<body style="background-color:rgb(44, 44, 44); font-family: Arial, Helvetica, sans-serif">
+    <div class = "title">NAMES'S POPULARITY EVOLUTION OVER TIME IN FRANCE</div>
+    <script src="js/NamesPopularity.js"></script>
+    <div class="baseline">
+        <input type="text" id="date1" name="date1" required minlength="4" maxlength="4" size="6" value="2000">
+       <input type="text" id="date2" name="date2" required minlength="4" maxlength="4" size="6" value="2010">
+    </div>
+    
+    <div class= "bottomGroup">
+        <fieldset style="color: #ffffff;display: grid; grid-template-rows: 40px 20px; grid-template-columns: 20px 20px;">
+            <input type="radio" id="girlNames"
+            name="sexeInput" onclick="SetSexe(this);" value="2" checked="true">
+            <label for="girlNames">♀</label>
+        
+            <input type="radio" id="boyNames"
+            name="sexeInput" onclick="SetSexe(this);" value="1">
+            <label for="boyNames">♂</label>
+        </fieldset>
+
+        <fieldset style="margin-left: 10px; width: 300px; height: 60px; text-align: center; color:#ffffff;">
+            <div id="currentName"></div>
+            <div id="currentYear"></div>
+            <div id="currentRank"></div>
+        </fieldset>
+    </div>
+</body>
+</html>
