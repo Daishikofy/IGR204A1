@@ -44,7 +44,7 @@ let svg = d3.select("body")
     .attr("transform",
           "translate(" + margin.left + "," + margin.top + ")");
 
-d3.csv("/data/topNames.csv", (d, i) => {
+d3.csv("data/topNames.csv", (d, i) => {
     return {
         year: +d.annais,
         sexe: +d.sexe,
