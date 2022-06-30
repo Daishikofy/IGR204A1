@@ -10,6 +10,7 @@ const legendHeight = hExt;
 
 let fromYear = 2000;
 let toYear = 2010;
+let selectedName;
 let dataset = [];
 let yearlyset = {}; //Array(121);
 let namesAlike = ["CAMILLE"]
@@ -23,23 +24,27 @@ colorFill = () => {}
 
 
 // Linear scale for y-axis 
+let div = d3.select("body").append("div").attr("class", "descriptors")
+let fromYearInput = div.append("input").attr("type", "text").attr("id","date1").attr("name","date1").attr("required", true).attr("minlength",4).attr("maxlength",4).attr("size", 6).attr("value", 2000);
+let toYearInput = div.append("input").attr("type", "text").attr("id","date2").attr("name","date2").attr("required", true).attr("minlength",4).attr("maxlength",4).attr("size", 6).attr("value", 2010);
+div = d3.select("body").append("div").attr("class", "descriptors").attr("margin", "20px")
+let nameInput = div.append("input").attr("type", "text").attr("id","nameInput").attr("name","nameInput").attr("required", true).attr("minlength",3).attr("size", 20).attr("value", "CAMILLE");
 
-d3.select("body").append("div")
 
-let svg = d3.select("div")
-            .append("svg")
+div = d3.select("body").append("br")
+div = d3.select("body").append("br")
+div = d3.select("body").append("div")
+
+let svg = div.append("svg")
                 .attr("width", wExt)
                 .attr("height", hExt)
                 .attr("id","ranking");
 
-let svgBar = d3.select("div").append("svg").attr("class", "colorBar").attr("height", legendHeight+70).attr("width", 2*legendWidth+70);
+//let svgBar = d3.select("div").append("svg").attr("class", "colorBar").attr("height", legendHeight+70).attr("width", 2*legendWidth+70);
 
-let svgLegend = d3.select("div").append("svg").attr("class", "squareScale").attr("height", legendHeight+70).attr("width", legendWidth+90);
+//let svgLegend = d3.select("div").append("svg").attr("class", "squareScale").attr("height", legendHeight+70).attr("width", legendWidth+90);
 
 
-let mainDiv = d3.select("body").append("div").attr("class", "descriptors")
-let fromYearInput = mainDiv.append("input").attr("type", "text").attr("id","date1").attr("name","date1").attr("required", true).attr("minlength",4).attr("maxlength",4).attr("size", 6).attr("value", 2000);
-let toYearInput = mainDiv.append("input").attr("type", "text").attr("id","date2").attr("name","date2").attr("required", true).attr("minlength",4).attr("maxlength",4).attr("size", 6).attr("value", 2010);
 
 //let nameText = pName.append("p").text("Name: ").append("span");
 //let postalText = pName.append("p").text("Postal code: ").append("span");
@@ -47,30 +52,26 @@ let toYearInput = mainDiv.append("input").attr("type", "text").attr("id","date2"
 //let populationText = pName.append("p").text("Population: ").append("span");
 
 
-fromYearInput.on("change", SetFromYear);
-toYearInput.on("change", SetToYear);
 yearmapping = (year) => {return year-1900};
 mapyearing = (index) => {return index+1900};
 
 
-getYearlyTotal = (prenom, year, sexe) => {
-    total = 0;
-    dataset.forEach((data) => {
-        if (data.prenom == prenom && data.year == year && data.sexe == sexe){
-            total += data.nb;
-        }
-    })
-    return total;
-}
-
 computeHeight = (prenom, year) => {
-    if (!multiSet.has(prenom) || year <1900){
-        console.log(`Wesh ${prenom} ${multiSet.has(prenom)} ${year}`);
-        return undefined;
-    }
-    difference = getYearlyTotal(prenom, year, 1) - getYearlyTotal(prenom, year, 2);
+    difference = dataset[prenom][year].nb_g - dataset[prenom][year].nb_f;
+    if (!difference) return [0, 0] ;
     height = Math.abs(difference);
     return [height, Math.sign(difference)];
+}
+
+collectMaleStat = function(prenom, year)  {
+    for (data of dataset) {
+        if (data.sexe != 1){
+            continue;
+        }
+        if (data.year != year) continue;
+        if (data.prenom != prenom) continue;
+        return {year: data.year, nb: data.nb, sexe: 1};
+    }
 }
 
 setTooltip = (d) => {
@@ -160,6 +161,7 @@ drawSquareScale = () => {
 }
 
 draw = () => {
+    
     selected = {};
     namesAlike.forEach((prenom) => {
         selected[prenom] = [];
@@ -200,18 +202,11 @@ draw = () => {
     //drawSquareScale();
 }
 
-d3.dsv(";", "data/dpt2020.csv", (data, i) => {
-    return {
-        sexe: +data.sexe,
-        prenom: data.preusuel,
-        year: +data.annais,
-        dept: data.dpt,
-        nb: +data.nombre
-    }
-}).then((data) => {
+d3.json("data/out2.json").then((data) => {
     dataset = data;
-    x = d3.scaleLinear().domain(d3.extent(data, (dat) => dat.year)).range([65, w+65]);
-    y = d3.scaleLinear().domain([0,d3.max(data, (dat) => dat.nb)]).range([h, 0]);
+    console.log(dataset)
+    x = d3.scaleLinear().domain([1900, 2020]).range([65, w+65]);
+    y = d3.scaleLinear().domain([0,7200]).range([h, 0]);
     colorFill = (sexe) =>{
         switch (sexe){
             case -1:
@@ -221,30 +216,33 @@ d3.dsv(";", "data/dpt2020.csv", (data, i) => {
             default:
                 return "black";
         }};
-
-
-    maleSet = new Set();
     
+    /* removing, all the dataset is now asexual
     dataset.forEach((data) => {
         if (data.sexe == 1 && data.prenom !="_PRENOMS_RARES") {
             maleSet.add(data.prenom);
         }
         else {
-            if (maleSet.has(data.prenom) && data.year && data.dept){
+            if (maleSet.has(data.prenom)){
                 if (!multiSet.has(data.prenom)){
-                multiSet.add(data.prenom);
-                yearlyset[data.prenom] = [{year : data.year, }]
+                    multiSet.add(data.prenom);
+                    yearlyset[data.prenom] = [{year : data.year, nb: data.nb, sexe: 2}];
+                    yearlyset[data.prenom].push(collectMaleStat(data.prenom, data.year));
+                }
+                else {
+                    yearlyset[data.prenom].push({year : data.year, nb: data.nb, sexe: 2});
+                    yearlyset[data.prenom].push(collectMaleStat(data.prenom, data.year));
                 }
             }
         }
     })
-    console.log(multiSet);
+    console.log(multiSet);*/
 
 
 
     draw();
     })
-.catch ((error) => console.log(`AAAH there's an error! \n${error}`));
+//.catch ((error) => console.log(`AAAH there's an error! \n${error}`));
 
 /*
 d3.tsv("../data/france.tsv",(data, i) => {
@@ -279,19 +277,30 @@ function SetFromYear(e){
 
     yearScale = d3.scaleLinear()
     .domain(d3.extent([fromYear, toYear + 1]))
-    .range([0, width]);
+    .range([0, w]);
 
-    draw();
 }
 
 function SetToYear(e){
     toYear = parseInt(e.target.value);
     fromYear = toYear - 10;
-    fromYearInput.value = fromYear;
+    fromYearInput.attr("value", fromYear);
 
     yearScale = d3.scaleLinear()
     .domain(d3.extent([fromYear, toYear + 1]))
-    .range([0, width]);
+    .range([0, w]);
+}
 
+setName = (e) =>{
+    console.log("Changed Name");
+    selectedName = e.target.value.toUpperCase();
+    theReg = new RegExp(`^${selectedName}`);
+    namesAlike = [...multiSet].filter((prenom)=>prenom.match(theReg));
+    console.log(namesAlike);
     draw();
 }
+
+
+fromYearInput.on("change", SetFromYear);
+toYearInput.on("change", SetToYear);
+nameInput.on("change", setName);
