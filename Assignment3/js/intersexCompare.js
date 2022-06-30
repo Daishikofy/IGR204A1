@@ -8,6 +8,8 @@ const rectSize = 50;
 const legendWidth = 30;
 const legendHeight = hExt;
 
+let fromYear = 2000;
+let toYear = 2010;
 let dataset = [];
 let yearlyset = {}; //Array(121);
 let namesAlike = ["CAMILLE"]
@@ -16,6 +18,9 @@ x = () => {}
 y = () => {}
 pop = () => {}
 colorFill = () => {}
+
+
+
 
 // Linear scale for y-axis 
 
@@ -31,12 +36,19 @@ let svgBar = d3.select("div").append("svg").attr("class", "colorBar").attr("heig
 
 let svgLegend = d3.select("div").append("svg").attr("class", "squareScale").attr("height", legendHeight+70).attr("width", legendWidth+90);
 
-let pName = d3.select("body").append("p").attr("class", "cityName")
-let nameText = pName.append("p").text("Name: ").append("span");
-let postalText = pName.append("p").text("Postal code: ").append("span");
-let densityText = pName.append("p").text("Density: ").append("span");
-let populationText = pName.append("p").text("Population: ").append("span");
 
+let mainDiv = d3.select("body").append("div").attr("class", "descriptors")
+let fromYearInput = mainDiv.append("input").attr("type", "text").attr("id","date1").attr("name","date1").attr("required", true).attr("minlength",4).attr("maxlength",4).attr("size", 6).attr("value", 2000);
+let toYearInput = mainDiv.append("input").attr("type", "text").attr("id","date2").attr("name","date2").attr("required", true).attr("minlength",4).attr("maxlength",4).attr("size", 6).attr("value", 2010);
+
+//let nameText = pName.append("p").text("Name: ").append("span");
+//let postalText = pName.append("p").text("Postal code: ").append("span");
+//let densityText = pName.append("p").text("Density: ").append("span");
+//let populationText = pName.append("p").text("Population: ").append("span");
+
+
+fromYearInput.on("change", SetFromYear);
+toYearInput.on("change", SetToYear);
 yearmapping = (year) => {return year-1900};
 mapyearing = (index) => {return index+1900};
 
@@ -200,7 +212,6 @@ d3.dsv(";", "data/dpt2020.csv", (data, i) => {
     dataset = data;
     x = d3.scaleLinear().domain(d3.extent(data, (dat) => dat.year)).range([65, w+65]);
     y = d3.scaleLinear().domain([0,d3.max(data, (dat) => dat.nb)]).range([h, 0]);
-    /*pop = d3.scaleSqrt().domain(d3.extent(data, (dat) => dat.population)).range([1, rectSize]);*/
     colorFill = (sexe) =>{
         switch (sexe){
             case -1:
@@ -259,3 +270,28 @@ d3.tsv("../data/france.tsv",(data, i) => {
     draw();
     })
 .catch ((error) => console.log(`AAAH there's an error ${error}`));*/
+
+// shamelessly taken from Lola's work
+function SetFromYear(e){
+    fromYear = parseInt(e.target.value);
+    toYear = fromYear + 10;
+    toYearInput.value = toYear;
+
+    yearScale = d3.scaleLinear()
+    .domain(d3.extent([fromYear, toYear + 1]))
+    .range([0, width]);
+
+    draw();
+}
+
+function SetToYear(e){
+    toYear = parseInt(e.target.value);
+    fromYear = toYear - 10;
+    fromYearInput.value = fromYear;
+
+    yearScale = d3.scaleLinear()
+    .domain(d3.extent([fromYear, toYear + 1]))
+    .range([0, width]);
+
+    draw();
+}
