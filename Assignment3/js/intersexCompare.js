@@ -1,15 +1,15 @@
 // Your code here
-const w = 1000;
+const w = 500;
 const wExt = w+120;
-const h = 1000;
+const h = 500;
 const hExt = h+50;
 const rectSize = 50;
 
 const legendWidth = 30;
 const legendHeight = hExt;
 
-let fromYear = 2000;
-let toYear = 2010;
+let fromYear = 1900;
+let toYear = 2020;
 let selectedName;
 let dataset = [];
 let yearlyset = {}; //Array(121);
@@ -31,11 +31,16 @@ div = d3.select("body").append("div").attr("class", "descriptors").attr("margin"
 let nameInput = div.append("input").attr("type", "text").attr("id","nameInput").attr("name","nameInput").attr("required", true).attr("minlength",3).attr("size", 20).attr("value", "CAMILLE");
 
 
-div = d3.select("body").append("br")
-div = d3.select("body").append("br")
+d3.select("body").append("br")
+d3.select("body").append("br")
 div = d3.select("body").append("div")
 
-let svg = div.append("svg")
+let svgMain = div.append("svg")
+                .attr("width", wExt)
+                .attr("height", hExt)
+                .attr("id","ranking");
+
+let svgComp = div.append("svg")
                 .attr("width", wExt)
                 .attr("height", hExt)
                 .attr("id","ranking");
@@ -51,28 +56,20 @@ let svg = div.append("svg")
 //let densityText = pName.append("p").text("Density: ").append("span");
 //let populationText = pName.append("p").text("Population: ").append("span");
 
-
-yearmapping = (year) => {return year-1900};
-mapyearing = (index) => {return index+1900};
-
-
 computeHeight = (prenom, year) => {
+    if (!dataset[prenom][year]) return [0,0];
     difference = dataset[prenom][year].nb_g - dataset[prenom][year].nb_f;
-    if (!difference) return [0, 0] ;
     height = Math.abs(difference);
     return [height, Math.sign(difference)];
 }
 
-collectMaleStat = function(prenom, year)  {
-    for (data of dataset) {
-        if (data.sexe != 1){
-            continue;
-        }
-        if (data.year != year) continue;
-        if (data.prenom != prenom) continue;
-        return {year: data.year, nb: data.nb, sexe: 1};
-    }
+getMainValues = function(prenom, year)  {
+    if (!dataset[prenom][year]) return [0,0];
+    
+    return [dataset[prenom][year].nb_g, dataset[prenom][year].nb_f];
 }
+
+
 
 setTooltip = (d) => {
     if (d === ""){
@@ -160,17 +157,60 @@ drawSquareScale = () => {
         .text((d) => d.toLocaleString());
 }
 
-draw = () => {
+drawMain = () => {
+    selected = [];
+
+    for (year=fromYear; year <=toYear; year++){
+        namesAlike.forEach((prenom) => {
+            selected.push({"prenom": prenom, "year": year, value: getMainValues(prenom, year)});
+            //console.log(selected[prenom]);
+        });
+    }
+
+    svgMain.selectAll("path").remove();
+    svgMain.selectAll("g").remove();
+
     
+    svgMain.selectAll("path")
+        .data(selected[prenom].slice(1))
+        .enter()
+        .append("path")
+        .attr("x", (d) => x(d.year))
+        .attr("y", (d) => y(d.value[0]))
+        .attr("stroke", (d) => colorFill(d.value[1]))
+        .attr("stroke-width", 1)
+        .attr("fill", (d)=>colorFill(d.value[1]))
+        .attr("name", (d)=>d.prenom+`-${d.year}`)
+        .attr("opacity", 0.5)
+        .attr("stroke-opacity", 0.5)
+        .attr("d", (d, i)=> {
+                path = d3.path();
+                path.moveTo(x(d.year-1), y(selected[prenom][i].value[0]));
+                path.lineTo(x(d.year), y(d.value[0]));
+                path.lineTo(x(d.year), y(0));
+                path.lineTo(x(d.year-1), y(0));
+                return path;
+            });
+
+    svgMain.append("g").attr("class", "x_axis").attr("transform", `translate(0, ${h+10})`).call(d3.axisBottom(x));
+    svgMain.append("g").attr("class", "y_axis").attr("transform", `translate(60, 0)`).call(d3.axisLeft(y));
+}
+
+draw = () => {
     selected = {};
     namesAlike.forEach((prenom) => {
         selected[prenom] = [];
-        for (year=1900; year <=2020; year++)
+        for (year=fromYear; year <=toYear; year++)
             selected[prenom].push({"year": year, value: computeHeight(prenom, year)});
-        console.log(selected[prenom]);
+        //console.log(selected[prenom]);
     });
+
+    svgComp.selectAll("path").remove();
+    svgComp.selectAll("g").remove();
+
     namesAlike.forEach((prenom) => {
-        svg.selectAll("path")
+        console.log(prenom)
+        svgComp.selectAll("path")
             .data(selected[prenom].slice(1))
             .enter()
             .append("path")
@@ -195,8 +235,8 @@ draw = () => {
         //.on("mouseover", (o, d)=>setTooltip(d));
         //.on("mouseout", (o,d)=>setTooltip(""));
     
-    svg.append("g").attr("class", "x_axis").attr("transform", `translate(0, ${h+10})`).call(d3.axisBottom(x));
-    svg.append("g").attr("class", "y_axis").attr("transform", `translate(60, 0)`).call(d3.axisLeft(y));
+    svgComp.append("g").attr("class", "x_axis").attr("transform", `translate(0, ${h+10})`).call(d3.axisBottom(x));
+    svgComp.append("g").attr("class", "y_axis").attr("transform", `translate(60, 0)`).call(d3.axisLeft(y));
 
     //drawColorBar();
     //drawSquareScale();
@@ -214,89 +254,60 @@ d3.json("data/out2.json").then((data) => {
             case 1:
                 return "red";
             default:
-                return "black";
+                return "white";
         }};
-    
-    /* removing, all the dataset is now asexual
-    dataset.forEach((data) => {
-        if (data.sexe == 1 && data.prenom !="_PRENOMS_RARES") {
-            maleSet.add(data.prenom);
-        }
-        else {
-            if (maleSet.has(data.prenom)){
-                if (!multiSet.has(data.prenom)){
-                    multiSet.add(data.prenom);
-                    yearlyset[data.prenom] = [{year : data.year, nb: data.nb, sexe: 2}];
-                    yearlyset[data.prenom].push(collectMaleStat(data.prenom, data.year));
-                }
-                else {
-                    yearlyset[data.prenom].push({year : data.year, nb: data.nb, sexe: 2});
-                    yearlyset[data.prenom].push(collectMaleStat(data.prenom, data.year));
-                }
-            }
-        }
-    })
-    console.log(multiSet);*/
-
-
 
     draw();
-    })
+})
 //.catch ((error) => console.log(`AAAH there's an error! \n${error}`));
 
-/*
-d3.tsv("../data/france.tsv",(data, i) => {
-    return {
-        codePostal: +data["Postal Code"],
-        density: +data.density,
-        inseeCode: +data.inseecode,
-        place: data.place,
-        population: +data.population,
-        longitude: +data.x,
-        latitude: +data.y
-    }
-}).then((data) => {
-    dataset = data;
-    x = d3.scaleLinear().domain(d3.extent(data, (dat) => dat.longitude)).range([35, w+35]);
-    y = d3.scaleLinear().domain(d3.extent(data, (dat) => dat.latitude)).range([h, 0]);
-    pop = d3.scaleSqrt().domain(d3.extent(data, (dat) => dat.population)).range([1, rectSize]);
-    color = d3.scaleSqrt().domain(d3.extent(data, (dat) => dat.density)).range(["#00FF00", "#FF0000"]);
-
-
-
-    //console.log(dataset);
-    draw();
-    })
-.catch ((error) => console.log(`AAAH there's an error ${error}`));*/
 
 // shamelessly taken from Lola's work
 function SetFromYear(e){
+    ma = 0;
+    namesAlike.forEach((prenom) => {
+        for (year=fromYear; year <=toYear; year++)
+            if (ma < computeHeight(prenom, year)[0]) ma=computeHeight(prenom, year)[0];
+    });
+    y = d3.scaleLinear().domain([0,ma+10]).range([h, 0]);
+
     fromYear = parseInt(e.target.value);
     toYear = fromYear + 10;
     toYearInput.value = toYear;
 
-    yearScale = d3.scaleLinear()
-    .domain(d3.extent([fromYear, toYear + 1]))
-    .range([0, w]);
+    x = d3.scaleLinear().domain([fromYear, toYear]).range([65, w+65]);
 
+    draw();
 }
 
 function SetToYear(e){
+    ma = 0;
+    namesAlike.forEach((prenom) => {
+        for (year=fromYear; year <=toYear; year++)
+            if (ma < computeHeight(prenom, year)[0]) ma=computeHeight(prenom, year)[0];
+    });
+    y = d3.scaleLinear().domain([0,ma+10]).range([h, 0]);
+
     toYear = parseInt(e.target.value);
     fromYear = toYear - 10;
     fromYearInput.attr("value", fromYear);
 
-    yearScale = d3.scaleLinear()
-    .domain(d3.extent([fromYear, toYear + 1]))
-    .range([0, w]);
+    x = d3.scaleLinear().domain([fromYear, toYear]).range([65, w+65]);
+    draw();
 }
 
 setName = (e) =>{
-    console.log("Changed Name");
     selectedName = e.target.value.toUpperCase();
     theReg = new RegExp(`^${selectedName}`);
-    namesAlike = [...multiSet].filter((prenom)=>prenom.match(theReg));
+    namesAlike = Object.keys(dataset).filter((prenom)=>prenom.match(theReg));
     console.log(namesAlike);
+    
+    ma = 0;
+    namesAlike.forEach((prenom) => {
+        for (year=fromYear; year <=toYear; year++)
+            if (ma < computeHeight(prenom, year)[0]) ma=computeHeight(prenom, year)[0];
+    });
+    y = d3.scaleLinear().domain([0,ma+10]).range([h, 0]);
     draw();
 }
 
