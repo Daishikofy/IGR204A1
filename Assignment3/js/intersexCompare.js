@@ -42,9 +42,9 @@ let nameInput = div.append("input").attr("type", "text").attr("id","nameInput").
 
 div = d3.select("body").append("div").attr("class", "tooltip")
 let nameText = div.append("p").text("Name: ").append("span");
-let postalText = div.append("p").text("Number: ").append("span");
-let densityText = div.append("p").text("Sex: ").append("span");
-let populationText = div.append("p").text("Year: ").append("span");
+let numberText = div.append("p").text("Number: ").append("span");
+let sexTest = div.append("p").text("Sex: ").append("span");
+let yearText = div.append("p").text("Year: ").append("span");
 
 
 div = d3.select("body").append("div")
@@ -85,17 +85,17 @@ getMainValues = function(prenom, year)  {
 setTooltip = (d) => {
     if (d === ""){
         nameText.text("");
-        postalText.text("");
-        densityText.text("");
-        populationText.text("");
+        numberText.text("");
+        sexTest.text("");
+        yearText.text("");
         return
     }
     console.log(d)
     
     nameText.text(d.prenom);
-    postalText.text(d.value.toLocaleString());
-    densityText.text(d.sexe);
-    populationText.text(d.year.toLocaleString());
+    numberText.text(d.value.toLocaleString());
+    sexTest.text(d.sexe);
+    yearText.text(d.year.toLocaleString());
 }
 
 setCompName = (d) => {
@@ -114,8 +114,6 @@ drawColorBar = ()=>{
 }
 
 drawSquareScale = () => {
-    //let tickList = d3.ticks(minPop, maxPop/popSubDiv, 8).concat(d3.ticks(maxPop/popSubDiv, maxPop, 2));
-    
     // Defining the legend bar scale
     yScale = d3.scaleLinear()
                 .domain([-2, namesAlike.length+2])
@@ -124,13 +122,12 @@ drawSquareScale = () => {
 
     svgLegend.selectAll("rect").remove();
     svgLegend.selectAll("text").remove();
-    //svgLegend.append("text").attr("transform", 'translate(0,40)').text("Names");
+
     // Drawing the legend bar
     svgLegend.selectAll("rect")
       .data(namesAlike)
       .enter()
       .append('rect')
-      //.attr('transform', `translate(${pop(maxPop)/2}, 50)`)
       .attr("x", (d) => 0)
       .attr("y", (d, i) => yScale(i))
       .attr("width", 15)
@@ -250,13 +247,10 @@ draw = () => {
     svgComp.append("g").attr("class", "x_axis").attr("transform", `translate(0, ${h+60})`).call(d3.axisBottom(x));
     svgComp.append("g").attr("class", "y_axis").attr("transform", `translate(60, 0)`).call(d3.axisLeft(y));
 
-    //drawColorBar();
-    //drawSquareScale();
 }
 
 d3.json("data/out2.json").then((data) => {
     dataset = data;
-    console.log(dataset)
     x = d3.scaleLinear().domain([fromYear, toYear]).range([65, w+65]);
     y = d3.scaleLinear().domain([0,7200]).range([h+50, 0+50]);
     colorFill = (sexe) =>{
@@ -274,7 +268,7 @@ d3.json("data/out2.json").then((data) => {
     draw();
     drawColorBar();
 })
-//.catch ((error) => console.log(`AAAH there's an error! \n${error}`));
+.catch ((error) => console.log(`AAAH there's an error! \n${error}`));
 
 
 // shamelessly taken from Lola's work
