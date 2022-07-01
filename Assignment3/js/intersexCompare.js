@@ -131,7 +131,7 @@ drawSquareScale = () => {
 
     svgLegend.selectAll("rect").remove();
     svgLegend.selectAll("text").remove();
-    svgLegend.append("text").attr("transform", 'translate(0,40)').text("Names");
+    //svgLegend.append("text").attr("transform", 'translate(0,40)').text("Names");
     // Drawing the legend bar
     svgLegend.selectAll("rect")
       .data(namesAlike)
