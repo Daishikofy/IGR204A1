@@ -181,7 +181,10 @@ drawMain = () => {
                     path.lineTo(x(d.year), yMain(d.value));
                     return path;
     }
-    ).on("mouseover", (o, d)=>setTooltip(d)).on("mouseout", (o, d)=>setTooltip("")).on("click", (o, d) => setCompName(d));
+    ).on("mouseover", (o, d)=>setTooltip(d)).on("mouseout", (o, d)=>setTooltip("")).on("click", (o, d) => setCompName(d)).append("svg:title")
+    .text(function(d) { 
+        return `Name: ${d.prenom}\nSexe: ${d.sexe}\nNumber: ${d.value}\nYear: ${d.year}\nClick to see comparison!`
+     });
     
     svgMain.selectAll("rect")
         .data(rectangles.slice(namesAlike.length))
@@ -237,7 +240,12 @@ draw = () => {
                 path.lineTo(x(d.year), y(0));
                 path.lineTo(x(d.year-1), y(0));
                 return path;
-            });
+            }).append("svg:title")
+            .text(function(d) { // yeah! Tooltips!
+                favor = "";
+                (d.value[1] == 1)? favor = "males": favor="females";
+                return `Name: ${compName}\nDifference: ${d.value[0]} in favor of ${favor} in year ${d.year}`
+             });
     
     svgComp.append("g").attr("class", "x_axis").attr("transform", `translate(0, ${h+60})`).call(d3.axisBottom(x));
     svgComp.append("g").attr("class", "y_axis").attr("transform", `translate(60, 0)`).call(d3.axisLeft(y));
