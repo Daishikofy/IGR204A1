@@ -2,7 +2,7 @@
 const w = 500;
 const wExt = w+120;
 const h = 500;
-const hExt = h+50;
+const hExt = h+100;
 const rectSize = 50;
 
 const legendWidth = 30;
@@ -17,8 +17,10 @@ let namesAlike = ["CAMILLE"]
 multiSet = new Set();
 x = () => {}
 y = () => {}
+yMain = () => {}
 pop = () => {}
 colorFill = () => {}
+color = d3.scaleOrdinal(d3.schemeCategory10)
 
 
 
@@ -31,15 +33,14 @@ div = d3.select("body").append("div").attr("class", "descriptors").attr("margin"
 let nameInput = div.append("input").attr("type", "text").attr("id","nameInput").attr("name","nameInput").attr("required", true).attr("minlength",3).attr("size", 20).attr("value", "CAMILLE");
 
 
-d3.select("body").append("br")
-d3.select("body").append("br")
 div = d3.select("body").append("div")
 
 let svgMain = div.append("svg")
                 .attr("width", wExt)
                 .attr("height", hExt)
-                .attr("id","ranking");
+                .attr("id","values");
 
+let svgLegend = div.append("svg").attr("class", "squareScale").attr("height", legendHeight+70).attr("width", legendWidth+90);
 let svgComp = div.append("svg")
                 .attr("width", wExt)
                 .attr("height", hExt)
@@ -47,7 +48,6 @@ let svgComp = div.append("svg")
 
 //let svgBar = d3.select("div").append("svg").attr("class", "colorBar").attr("height", legendHeight+70).attr("width", 2*legendWidth+70);
 
-//let svgLegend = d3.select("div").append("svg").attr("class", "squareScale").attr("height", legendHeight+70).attr("width", legendWidth+90);
 
 
 
@@ -119,81 +119,95 @@ drawColorBar = ()=>{
 }
 
 drawSquareScale = () => {
-    let maxPop = d3.max(dataset, (d)=>d.population);
-    let minPop = d3.min(dataset, (d)=>d.population);
-    const popSubDiv = 5;
-    let tickList = d3.ticks(minPop, maxPop/popSubDiv, 8).concat(d3.ticks(maxPop/popSubDiv, maxPop, 2));
+    //let tickList = d3.ticks(minPop, maxPop/popSubDiv, 8).concat(d3.ticks(maxPop/popSubDiv, maxPop, 2));
     
+    test = [...namesAlike];
+
+    // Defining the legend bar scale
+    yScale = d3.scaleLinear()
+                .domain([-2, namesAlike.length+2])
+                .range([legendHeight, 0]);
 
 
-    // Defining the legend bar scale. That Paris problem sure is troublesome.
-    yScale = d3
-    .scaleLinear()
-    .domain([d3.min(dataset, (d) => d.population), maxPop/popSubDiv, maxPop])
-    .range([legendHeight, legendHeight/5, 0]);
-
-
-    svgLegend.append("text").attr("transform", 'translate(0,40)').text("Population");
+    svgLegend.selectAll("rect").remove();
+    svgLegend.selectAll("text").remove();
+    svgLegend.append("text").attr("transform", 'translate(0,40)').text("Names");
     // Drawing the legend bar
-    const paf = svgLegend
-      .selectAll("rect")
-      .data(tickList)
+    svgLegend.selectAll("rect")
+      .data(namesAlike)
       .enter()
       .append('rect')
-      .attr('transform', `translate(${pop(maxPop)/2}, 50)`)
-      .attr("x", (d) => -pop(d)/2)
-      .attr("y", (d) => yScale(d))
-      .attr("width", (d) => pop(d))
-      .attr("height", (d) => pop(d));
-    
-    // Adding the numbers
+      //.attr('transform', `translate(${pop(maxPop)/2}, 50)`)
+      .attr("x", (d) => 0)
+      .attr("y", (d, i) => yScale(i))
+      .attr("width", 15)
+      .attr("height", 10)
+      .attr("fill", (d)=>color(d));
+      
+    // Adding the names
     svgLegend.selectAll("text")
-        .data(tickList)
+        .data(namesAlike)
         .enter()
-        .append("text").attr("transform", `translate(${pop(maxPop)+5}, 50)`)
-        .attr("y", (d)=>yScale(d)+pop(d)/2)
+        .append("text").attr("transform", `translate(20, 5)`).attr("x", (d) => 0)
+        .attr("y", (d, i)=>yScale(i))
         .attr("font-size", "0.8em")
         .attr("dy", "0.4em")
-        .text((d) => d.toLocaleString());
+        .text((d) => {console.log(d+"hey"); return d});
 }
 
 drawMain = () => {
-    selected = [];
+    curves = [];
+    rectangles = [];
 
     for (year=fromYear; year <=toYear; year++){
         namesAlike.forEach((prenom) => {
-            selected.push({"prenom": prenom, "year": year, value: getMainValues(prenom, year)});
+            curves.push({"prenom": prenom, "year": year, value: getMainValues(prenom, year)[0]}); // male variant
+            rectangles.push({"prenom": prenom, "year": year, value: getMainValues(prenom, year)[0]}); // male variant
+            curves.push({"prenom": prenom, "year": year, value: getMainValues(prenom, year)[1]}); // female variant
             //console.log(selected[prenom]);
         });
     }
 
+    yMain = d3.scaleLinear().domain([0, d3.max(curves, (data)=> data.value)+10]).range([h+50, 50]);
+
     svgMain.selectAll("path").remove();
+    svgMain.selectAll("rect").remove();
     svgMain.selectAll("g").remove();
 
     
     svgMain.selectAll("path")
-        .data(selected[prenom].slice(1))
+        .data(curves.slice(2*namesAlike.length))
         .enter()
         .append("path")
         .attr("x", (d) => x(d.year))
-        .attr("y", (d) => y(d.value[0]))
-        .attr("stroke", (d) => colorFill(d.value[1]))
-        .attr("stroke-width", 1)
-        .attr("fill", (d)=>colorFill(d.value[1]))
+        .attr("y", (d) => y(d.value))
+        .attr("stroke", (d) => color(d.prenom))
+        .attr("stroke-width", 2)
         .attr("name", (d)=>d.prenom+`-${d.year}`)
-        .attr("opacity", 0.5)
-        .attr("stroke-opacity", 0.5)
         .attr("d", (d, i)=> {
-                path = d3.path();
-                path.moveTo(x(d.year-1), y(selected[prenom][i].value[0]));
-                path.lineTo(x(d.year), y(d.value[0]));
-                path.lineTo(x(d.year), y(0));
-                path.lineTo(x(d.year-1), y(0));
-                return path;
-            });
+                    path = d3.path();
+                    path.moveTo(x(d.year-1), yMain(curves[i].value));
+                    path.lineTo(x(d.year), yMain(d.value));
+                    return path;
+    }
+    );
+    
+    svgMain.selectAll("rect")
+        .data(rectangles.slice(namesAlike.length))
+        .enter()
+        .append("rect")
+        .attr("x", (d) => x(d.year)-2)
+        .attr("y", (d) => yMain(d.value)-2)
+        .attr("fill", (d)=>color(d.prenom))
+        .attr("width", 4)
+        .attr("height", 4)
+        .attr("name", (d)=>d.prenom+`-${d.year}`);
+    
+    
 
-    svgMain.append("g").attr("class", "x_axis").attr("transform", `translate(0, ${h+10})`).call(d3.axisBottom(x));
-    svgMain.append("g").attr("class", "y_axis").attr("transform", `translate(60, 0)`).call(d3.axisLeft(y));
+    svgMain.append("g").attr("class", "x_axis").attr("transform", `translate(0, ${h+60})`).call(d3.axisBottom(x));
+    svgMain.append("g").attr("class", "y_axis").attr("transform", `translate(60, 0)`).call(d3.axisLeft(yMain));
+    drawSquareScale();
 }
 
 draw = () => {
@@ -202,7 +216,6 @@ draw = () => {
         selected[prenom] = [];
         for (year=fromYear; year <=toYear; year++)
             selected[prenom].push({"year": year, value: computeHeight(prenom, year)});
-        //console.log(selected[prenom]);
     });
 
     svgComp.selectAll("path").remove();
@@ -235,7 +248,7 @@ draw = () => {
         //.on("mouseover", (o, d)=>setTooltip(d));
         //.on("mouseout", (o,d)=>setTooltip(""));
     
-    svgComp.append("g").attr("class", "x_axis").attr("transform", `translate(0, ${h+10})`).call(d3.axisBottom(x));
+    svgComp.append("g").attr("class", "x_axis").attr("transform", `translate(0, ${h+60})`).call(d3.axisBottom(x));
     svgComp.append("g").attr("class", "y_axis").attr("transform", `translate(60, 0)`).call(d3.axisLeft(y));
 
     //drawColorBar();
@@ -246,7 +259,7 @@ d3.json("data/out2.json").then((data) => {
     dataset = data;
     console.log(dataset)
     x = d3.scaleLinear().domain([1900, 2020]).range([65, w+65]);
-    y = d3.scaleLinear().domain([0,7200]).range([h, 0]);
+    y = d3.scaleLinear().domain([0,7200]).range([h+50, 0+50]);
     colorFill = (sexe) =>{
         switch (sexe){
             case -1:
@@ -255,8 +268,10 @@ d3.json("data/out2.json").then((data) => {
                 return "red";
             default:
                 return "white";
-        }};
-
+        }
+    };
+    
+    drawMain();
     draw();
 })
 //.catch ((error) => console.log(`AAAH there's an error! \n${error}`));
@@ -269,7 +284,7 @@ function SetFromYear(e){
         for (year=fromYear; year <=toYear; year++)
             if (ma < computeHeight(prenom, year)[0]) ma=computeHeight(prenom, year)[0];
     });
-    y = d3.scaleLinear().domain([0,ma+10]).range([h, 0]);
+    y = d3.scaleLinear().domain([0,7200]).range([h+50, 0+50]);
 
     fromYear = parseInt(e.target.value);
     toYear = fromYear + 10;
@@ -278,6 +293,7 @@ function SetFromYear(e){
     x = d3.scaleLinear().domain([fromYear, toYear]).range([65, w+65]);
 
     draw();
+    drawMain();
 }
 
 function SetToYear(e){
@@ -286,7 +302,7 @@ function SetToYear(e){
         for (year=fromYear; year <=toYear; year++)
             if (ma < computeHeight(prenom, year)[0]) ma=computeHeight(prenom, year)[0];
     });
-    y = d3.scaleLinear().domain([0,ma+10]).range([h, 0]);
+    y = d3.scaleLinear().domain([0,7200]).range([h+50, 0+50]);
 
     toYear = parseInt(e.target.value);
     fromYear = toYear - 10;
@@ -294,6 +310,7 @@ function SetToYear(e){
 
     x = d3.scaleLinear().domain([fromYear, toYear]).range([65, w+65]);
     draw();
+    drawMain();
 }
 
 setName = (e) =>{
@@ -307,8 +324,9 @@ setName = (e) =>{
         for (year=fromYear; year <=toYear; year++)
             if (ma < computeHeight(prenom, year)[0]) ma=computeHeight(prenom, year)[0];
     });
-    y = d3.scaleLinear().domain([0,ma+10]).range([h, 0]);
+    y = d3.scaleLinear().domain([0,7200]).range([h+50, 0+50]);
     draw();
+    drawMain();
 }
 
 
